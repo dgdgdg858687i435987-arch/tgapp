@@ -1,0 +1,1522 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<title>KIT-h Wallet</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap');
+:root {
+  --blue:#037dd6;--header-bg:#0d1728;--text:#141414;--muted:#6a737d;
+  --border:#e8eaed;--green:#28a745;--red:#dc3545;
+  --card-bg:#ffffff;--content-bg:#f2f4f8;--nav-bg:#ffffff;
+  --tab-bg:#ffffff;--asset-bg:#ffffff;--badge-bg:#e8f4fd;
+  --badge-color:#037dd6;--expand-bg:#f0f2f5;
+}
+[data-theme="dark"]{
+  --text:#f0f0f0;--muted:#9ba3af;--card-bg:#1a2235;--content-bg:#0e1420;
+  --nav-bg:#111827;--tab-bg:#1a2235;--asset-bg:#1a2235;--border:#2a3548;
+  --badge-bg:rgba(3,125,214,.15);--badge-color:#4da6ff;--expand-bg:#111827;
+}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Nunito',sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+html{min-height:100%;background:#0d1728}
+body{width:100%;min-height:100%;background:var(--content-bg);transition:background .3s}
+.app{width:100%;max-width:430px;min-height:100vh;margin:0 auto;background:var(--content-bg);display:flex;flex-direction:column;position:relative;transition:background .3s}
+.status-bar{background:var(--header-bg);height:44px}
+.header{background:linear-gradient(180deg,#0d1728 0%,#162236 100%);padding:10px 18px 14px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 16px rgba(0,0,0,.25)}
+.logo-wrap{display:flex;align-items:center;gap:10px;cursor:pointer}
+.whale-logo{width:44px;height:44px}
+.logo-text{color:#4da6ff;font-size:18px;font-weight:800;letter-spacing:.5px}
+.header-right{display:flex;align-items:center;gap:8px}
+.theme-btn,.gear-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:white;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s}
+.theme-btn:active,.gear-btn:active{background:rgba(255,255,255,.18)}
+.content{flex:1;overflow-y:auto;background:var(--content-bg);padding-bottom:96px}
+.content::-webkit-scrollbar{display:none}
+.account-card{background:var(--card-bg);margin:14px 16px 0;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.07);overflow:hidden}
+.account-card-header{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer}
+.account-card-header:active{filter:brightness(.97)}
+.acct-left{display:flex;flex-direction:column;align-items:center;flex:1}
+.acct-name{font-size:14px;font-weight:700;color:var(--text)}
+.acct-addr{font-size:12px;color:var(--muted);margin-top:2px;font-weight:500}
+.acct-arrow{color:var(--muted);font-size:18px;transition:transform .25s}
+.acct-arrow.open{transform:rotate(90deg)}
+.account-dropdown{max-height:0;overflow:hidden;transition:max-height .3s ease}
+.account-dropdown.open{max-height:200px;border-top:1px solid var(--border)}
+.account-dropdown-inner{padding:14px 16px}
+.addr-box{display:flex;align-items:center;gap:8px;background:var(--expand-bg);border-radius:12px;padding:10px 12px}
+.addr-full{font-size:11px;color:var(--muted);font-family:monospace;word-break:break-all;line-height:1.5;flex:1}
+.copy-btn{flex-shrink:0;background:var(--blue);color:white;border:none;cursor:pointer;font-size:11px;font-weight:700;padding:6px 12px;border-radius:8px;white-space:nowrap}
+.copy-btn:active{opacity:.8;transform:scale(.95)}
+
+/* ── NETWORK BADGE ── */
+.net-badge{display:flex;align-items:center;gap:6px;background:var(--badge-bg);color:var(--badge-color);font-size:12px;font-weight:700;padding:6px 16px;border-radius:20px;width:fit-content;margin:10px auto;cursor:pointer;border:1.5px solid rgba(3,125,214,.2);transition:all .15s;user-select:none;box-shadow:0 2px 8px rgba(3,125,214,.1)}
+.net-badge:active{transform:scale(.96);opacity:.85}
+.net-dot{width:7px;height:7px;background:#28a745;border-radius:50%;animation:pulse 2s infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 2px rgba(40,167,69,.2)}50%{box-shadow:0 0 0 4px rgba(40,167,69,.1)}}
+.net-badge-icon{display:flex;align-items:center;justify-content:center;color:var(--badge-color);opacity:.7}
+
+.balance-wrap{text-align:center;padding:6px 20px 10px;user-select:none}
+.balance-label{display:flex;align-items:center;justify-content:center;gap:7px;font-size:13px;color:var(--muted);font-weight:600;margin-bottom:8px}
+.eye-btn{background:none;border:none;cursor:pointer;padding:0;display:flex;align-items:center;color:var(--muted)}
+
+.balance-primary-row{display:flex;flex-direction:column;align-items:center;gap:8px}
+.balance-primary{font-size:34px;font-weight:800;color:var(--text);letter-spacing:-.5px;white-space:nowrap;cursor:pointer;text-align:center}
+
+/* ── CURRENCY SWITCHER ── */
+.currency-switcher{display:flex;justify-content:center;gap:6px;margin-top:4px;flex-wrap:wrap}
+.curr-btn{background:var(--expand-bg);border:1.5px solid var(--border);color:var(--muted);font-size:12px;font-weight:700;padding:4px 14px;border-radius:20px;cursor:pointer;transition:all .15s;letter-spacing:.3px}
+.curr-btn.active{background:var(--badge-bg);color:var(--blue);border-color:var(--blue)}
+.curr-btn:active{transform:scale(.95)}
+
+.change-badge{display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:800;padding:5px 14px;border-radius:20px;letter-spacing:.2px;white-space:nowrap;cursor:default;border:1.5px solid transparent;margin-top:4px}
+.change-badge.pos{background:rgba(40,167,69,.12);color:#1a9940;border-color:rgba(40,167,69,.3)}
+.change-badge.neg{background:rgba(220,53,69,.12);color:#c0293c;border-color:rgba(220,53,69,.3)}
+.change-badge.neu{background:rgba(150,150,150,.1);color:var(--muted);border-color:rgba(150,150,150,.2)}
+[data-theme="dark"] .change-badge.pos{background:rgba(40,167,69,.18);color:#3ddc6a;border-color:rgba(40,167,69,.35)}
+[data-theme="dark"] .change-badge.neg{background:rgba(220,53,69,.18);color:#ff5a6a;border-color:rgba(220,53,69,.35)}
+
+.gas-badge-wrap{display:flex;justify-content:center;margin:4px 0 14px}
+.gas-badge{display:flex;align-items:center;gap:6px;background:#fef3cd;color:#856404;font-size:12px;font-weight:700;padding:6px 16px;border-radius:20px;cursor:pointer;border:1px solid #fde08d}
+[data-theme="dark"] .gas-badge{background:rgba(254,197,61,.15);color:#fdc43a;border-color:rgba(254,197,61,.25)}
+.gas-icon-svg{display:inline-flex;align-items:center;flex-shrink:0}
+
+.actions{display:flex;justify-content:center;gap:18px;padding:0 20px 20px}
+.act-btn{display:flex;flex-direction:column;align-items:center;gap:7px;background:none;border:none;cursor:pointer}
+.act-circle{width:48px;height:48px;border-radius:50%;border:1.5px solid var(--blue);background:var(--card-bg);display:flex;align-items:center;justify-content:center;color:var(--blue);transition:all .15s;box-shadow:0 2px 8px rgba(3,125,214,.1)}
+.act-btn:active .act-circle{background:var(--blue);color:white;transform:scale(.94)}
+.act-label{font-size:11px;font-weight:700;color:var(--blue);letter-spacing:.3px}
+
+.tabs{display:flex;background:var(--tab-bg);border-bottom:1.5px solid var(--border)}
+.tab{flex:1;text-align:center;padding:12px 0;font-size:12px;font-weight:800;color:var(--muted);cursor:pointer;letter-spacing:.8px;position:relative}
+.tab.active{color:var(--blue)}
+.tab.active::after{content:'';position:absolute;bottom:-1.5px;left:0;right:0;height:2px;background:var(--blue);border-radius:2px 2px 0 0}
+
+.assets-section{background:var(--asset-bg)}
+.section-title{font-size:16px;font-weight:800;color:var(--text);padding:14px 18px 6px}
+.asset-row{display:flex;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border);cursor:pointer;position:relative}
+.asset-row:active{filter:brightness(.97)}
+.asset-row.expanded{border-bottom:none}
+.coin-wrap{position:relative;width:44px;height:44px;margin-right:14px;flex-shrink:0}
+.network-count-badge{position:absolute;bottom:-2px;right:-2px;width:18px;height:18px;border-radius:50%;background:#e8e8e8;border:1.5px solid var(--asset-bg);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#555}
+[data-theme="dark"] .network-count-badge{background:#2a3548;color:#aaa}
+.asset-mid{flex:1}
+.asset-name{font-size:15px;font-weight:700;color:var(--text)}
+.asset-sub{font-size:12px;color:var(--muted);margin-top:2px;font-weight:500}
+.asset-right{text-align:right;white-space:nowrap}
+.asset-usd{font-size:15px;font-weight:700;color:var(--text)}
+.network-list{display:none;background:var(--expand-bg);margin:0 10px 10px;border-radius:14px;overflow:hidden}
+.network-list.open{display:block;animation:slideDown .2s ease}
+@keyframes slideDown{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.network-row{display:flex;align-items:center;padding:12px 14px;cursor:pointer;border-bottom:1px solid rgba(0,0,0,.05)}
+[data-theme="dark"] .network-row{border-bottom-color:rgba(255,255,255,.04)}
+.network-row:last-child{border-bottom:none}
+.network-row:active{filter:brightness(.96)}
+.net-coin-wrap{position:relative;width:40px;height:40px;margin-right:12px;flex-shrink:0}
+.net-coin-icon{width:40px;height:40px;border-radius:50%}
+.net-overlay-icon{position:absolute;bottom:-3px;right:-3px;width:18px;height:18px;border-radius:50%;border:2px solid var(--expand-bg);overflow:hidden;display:flex;align-items:center;justify-content:center}
+.net-overlay-icon svg{width:18px;height:18px}
+.net-row-mid{flex:1;display:flex;align-items:center;gap:8px}
+.net-row-name{font-size:14px;font-weight:700;color:var(--text)}
+.net-tag{background:var(--card-bg);color:var(--muted);font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;border:1px solid var(--border);white-space:nowrap}
+.net-row-right{text-align:right;white-space:nowrap}
+.net-row-amount{font-size:13px;font-weight:600;color:var(--muted)}
+
+.activity-list{background:var(--asset-bg);display:none}
+.act-row{display:flex;align-items:center;padding:13px 18px;border-bottom:1px solid var(--border);cursor:pointer;gap:12px}
+.act-row:active{filter:brightness(.97)}
+.act-icon-wrap{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.act-icon-recv{background:#e8f8ee;color:var(--green)}
+.act-icon-send{background:#fdecea;color:var(--red)}
+.act-mid{flex:1}
+.act-type{font-size:14px;font-weight:700;color:var(--text)}
+.act-time{font-size:11px;color:var(--muted);margin-top:2px;font-weight:500}
+.act-hash{font-size:10px;color:var(--muted);margin-top:1px;font-family:monospace}
+.act-amount-pos{font-size:14px;font-weight:700;color:var(--green);white-space:nowrap}
+.act-amount-neg{font-size:14px;font-weight:700;color:var(--red);white-space:nowrap}
+
+/* MARKET PANEL */
+.market-panel{display:none;background:var(--asset-bg)}
+.market-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 6px}
+.market-refresh{background:var(--badge-bg);border:none;border-radius:10px;padding:6px 12px;font-size:12px;font-weight:700;color:var(--badge-color);cursor:pointer;display:flex;align-items:center;gap:5px}
+.market-refresh:active{opacity:.7}
+.market-row{display:flex;align-items:center;padding:13px 18px;border-bottom:1px solid var(--border);cursor:pointer}
+.market-row:active{filter:brightness(.97)}
+.market-mid{flex:1}
+.market-name{font-size:15px;font-weight:700;color:var(--text)}
+.market-sym{font-size:12px;color:var(--muted);margin-top:2px;font-weight:500}
+.market-right{text-align:right}
+.market-price{font-size:15px;font-weight:700;color:var(--text)}
+.market-chg{font-size:12px;font-weight:700;margin-top:2px}
+.market-chg.pos{color:#1a9940}
+.market-chg.neg{color:#c0293c}
+[data-theme="dark"] .market-chg.pos{color:#3ddc6a}
+[data-theme="dark"] .market-chg.neg{color:#ff5a6a}
+
+/* BOTTOM NAV -- bigger */
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;height:82px;background:var(--nav-bg);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-around;padding:0 4px 8px;box-shadow:0 -4px 20px rgba(0,0,0,.08);z-index:50}
+.nav-btn{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:8px 10px;border-radius:14px;border:none;background:none;flex:1}
+.nav-btn:active{background:var(--badge-bg)}
+.nav-btn.active .nav-icon,.nav-btn.active .nav-label{color:var(--blue)}
+.nav-icon{font-size:24px;color:var(--muted);display:flex;align-items:center;justify-content:center}
+.nav-label{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.2px}
+
+.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(10px);background:#1a1a1a;color:white;padding:10px 20px;border-radius:24px;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:all .25s;white-space:nowrap;z-index:999}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── MODALS ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:flex-end;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal-sheet{background:var(--card-bg);width:100%;max-width:430px;border-radius:20px 20px 0 0;padding:20px 18px 40px;max-height:90vh;overflow-y:auto;animation:sheetUp .3s ease}
+@keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-title{font-size:18px;font-weight:800;color:var(--text);margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.modal-title-left{display:flex;align-items:center;gap:10px}
+.modal-close{background:var(--expand-bg);border:none;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0}
+
+/* ── NETWORK OPTIONS ── */
+.net-option{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:14px;cursor:pointer;margin-bottom:8px;border:2px solid var(--border);background:var(--expand-bg);transition:all .15s}
+.net-option:active{transform:scale(.97)}
+.net-option.selected{border-color:var(--blue);background:var(--badge-bg)}
+.net-option-icon{width:42px;height:42px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.net-option-icon svg{width:42px;height:42px}
+.net-option-info{flex:1}
+.net-option-name{font-size:15px;font-weight:700;color:var(--text)}
+.net-option-chain{font-size:12px;color:var(--muted);font-weight:500;margin-top:2px}
+.net-option-check{font-size:20px;color:var(--blue);display:none}
+.net-option.selected .net-option-check{display:block}
+
+/* ── ADMIN ── */
+.a-section{margin-bottom:22px}
+.a-title{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.a-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.a-row{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}
+.a-label{font-size:13px;font-weight:700;color:var(--text)}
+.a-input{background:var(--expand-bg);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;font-size:14px;font-weight:600;color:var(--text);width:100%;outline:none;font-family:'Nunito',sans-serif}
+.a-input:focus{border-color:var(--blue)}
+.a-apply{width:100%;padding:14px;background:var(--blue);color:white;border:none;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;margin-top:4px}
+.a-apply:active{opacity:.85;transform:scale(.98)}
+.a-quick{width:100%;padding:11px;background:var(--green);color:white;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px}
+.a-quick:active{opacity:.85}
+.a-info{background:var(--badge-bg);border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:13px;font-weight:600;color:var(--badge-color);display:flex;align-items:center;justify-content:space-between;gap:8px}
+.change-preview-box{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap}
+
+/* Gas icon picker */
+.gas-icon-picker{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+.gas-icon-opt{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;padding:10px 14px;border-radius:12px;border:2px solid var(--border);background:var(--expand-bg);transition:all .15s;min-width:60px}
+.gas-icon-opt:active{transform:scale(.95)}
+.gas-icon-opt.selected{border-color:var(--blue);background:var(--badge-bg)}
+.gas-icon-opt svg{width:22px;height:22px;stroke:var(--text)}
+.gas-icon-opt.selected svg{stroke:var(--blue)}
+.gas-icon-opt span{font-size:10px;font-weight:700;color:var(--muted)}
+.gas-icon-opt.selected span{color:var(--blue)}
+
+/* ── SETTINGS ── */
+.settings-page{display:none;padding:16px}
+.settings-page.show{display:block}
+.s-item{background:var(--card-bg);border-radius:14px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;box-shadow:0 1px 6px rgba(0,0,0,.05)}
+.s-item:active{filter:brightness(.97)}
+.s-left{display:flex;align-items:center;gap:12px}
+.s-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.s-icon svg{width:20px;height:20px}
+.s-name{font-size:14px;font-weight:700;color:var(--text)}
+.s-sub{font-size:12px;color:var(--muted);margin-top:2px;font-weight:500}
+.s-arrow{color:var(--muted);font-size:18px}
+
+.auto-badge{font-size:10px;font-weight:700;color:var(--green);background:rgba(40,167,69,.1);border-radius:8px;padding:2px 6px;border:1px solid rgba(40,167,69,.2);margin-left:4px}
+
+/* ════ SWAP STYLES (updated) ════ */
+.swap-content{padding:0 18px 32px}
+.swap-box{background:var(--expand-bg);border-radius:16px;padding:16px;border:1.5px solid var(--border);margin-bottom:6px;position:relative;transition:border-color .15s}
+.swap-box:focus-within{border-color:var(--blue)}
+.swap-box-label{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px}
+.swap-token-row{display:flex;align-items:center;gap:10px}
+.swap-token-btn{display:flex;align-items:center;gap:8px;background:var(--card-bg);border:1.5px solid var(--border);border-radius:12px;padding:8px 12px;cursor:pointer;flex-shrink:0;transition:all .15s;font-family:'Nunito',sans-serif}
+.swap-token-btn:active{transform:scale(.95);border-color:var(--blue)}
+.swap-token-sym{font-size:14px;font-weight:800;color:var(--text)}
+.swap-token-arrow{font-size:10px;color:var(--muted);margin-left:auto}
+.swap-amount-wrap{flex:1;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.swap-amount-input{background:transparent;border:none;outline:none;font-size:26px;font-weight:800;color:var(--text);width:100%;text-align:right;font-family:'Nunito',sans-serif}
+.swap-amount-input::placeholder{color:var(--border)}
+.swap-usd-equiv{font-size:12px;color:var(--muted);font-weight:600}
+.swap-balance-row{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
+.swap-balance-label{font-size:12px;color:var(--muted);font-weight:600}
+.swap-max-btn{font-size:11px;font-weight:800;color:var(--blue);background:var(--badge-bg);border:none;border-radius:6px;padding:3px 8px;cursor:pointer;font-family:'Nunito',sans-serif;transition:all .12s}
+.swap-max-btn:active{transform:scale(.9)}
+.swap-arrow-circle{width:36px;height:36px;border-radius:50%;background:var(--card-bg);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;margin:0 auto;position:relative;z-index:2;transition:all .2s;color:var(--blue);font-size:16px}
+.swap-arrow-circle:active{transform:rotate(180deg) scale(.9);background:var(--blue);color:white;border-color:var(--blue)}
+.swap-divider{display:flex;align-items:center;justify-content:center;margin:-3px 0;position:relative;z-index:1}
+.swap-info{background:var(--expand-bg);border-radius:12px;padding:12px 14px;margin:10px 0;border:1px solid var(--border)}
+.swap-info-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:13px}
+.swap-info-label{color:var(--muted);font-weight:600}
+.swap-info-val{font-weight:700;color:var(--text)}
+.swap-info-val.green{color:#1a9940}
+[data-theme="dark"] .swap-info-val.green{color:#3ddc6a}
+.swap-btn{width:100%;padding:16px;background:linear-gradient(135deg,#037dd6,#0560a8);color:white;border:none;border-radius:16px;font-size:16px;font-weight:800;cursor:pointer;margin-top:8px;transition:all .15s;font-family:'Nunito',sans-serif;box-shadow:0 4px 16px rgba(3,125,214,.35)}
+.swap-btn:active{transform:scale(.97) translateY(1px);box-shadow:0 2px 8px rgba(3,125,214,.2)}
+.slippage-row{display:flex;gap:8px;margin-top:6px}
+.slip-btn{flex:1;padding:8px;border-radius:10px;border:1.5px solid var(--border);background:var(--expand-bg);color:var(--muted);font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;transition:all .12s}
+.slip-btn.active{border-color:var(--blue);background:var(--badge-bg);color:var(--blue)}
+.slip-btn:active{transform:scale(.94)}
+.token-select-list{padding:10px 0}
+.token-select-row{display:flex;align-items:center;gap:12px;padding:12px 18px;cursor:pointer;transition:background .12s;border-radius:12px;margin:0 4px}
+.token-select-row:active{background:var(--badge-bg)}
+.token-select-name{font-size:14px;font-weight:700;color:var(--text)}
+.token-select-bal{font-size:12px;color:var(--muted);font-weight:600;margin-top:2px}
+.token-select-usd{font-size:13px;font-weight:700;color:var(--text);margin-left:auto}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+<div class="status-bar"></div>
+<header class="header">
+  <div class="logo-wrap">
+    <svg class="whale-logo" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="wg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#7fe8ff"/><stop offset="100%" stop-color="#0066ff"/></linearGradient>
+        <radialGradient id="wbg" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#1aa7ff" stop-opacity="0.3"/><stop offset="100%" stop-color="transparent"/></radialGradient>
+        <filter id="wglow"><feDropShadow dx="0" dy="0" stdDeviation="10" flood-color="#0099ff" flood-opacity=".45"/></filter>
+        <linearGradient id="bgbox" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0e1626"/><stop offset="100%" stop-color="#070c16"/></linearGradient>
+      </defs>
+      <rect width="512" height="512" rx="120" fill="url(#bgbox)"/>
+      <rect width="512" height="512" rx="120" fill="none" stroke="#008cff" stroke-width="10" stroke-opacity=".35"/>
+      <circle cx="256" cy="265" r="160" fill="url(#wbg)"/>
+      <path fill="url(#wg1)" stroke="#2aa8ff" stroke-width="6" stroke-linejoin="round" paint-order="stroke fill" filter="url(#wglow)" d="M345 228 C395 185 440 158 478 143 C462 185 444 222 410 254 C444 280 465 318 478 360 C430 333 388 306 336 284 Z"/>
+      <path fill="url(#wg1)" stroke="#2aa8ff" stroke-width="6" stroke-linejoin="round" paint-order="stroke fill" filter="url(#wglow)" d="M95 258 C95 168 168 115 260 115 C342 115 398 162 398 240 C398 318 336 368 248 368 C176 368 124 332 104 291 C86 298 65 315 48 338 C51 298 65 270 86 252 C67 228 54 200 48 170 C67 190 83 218 95 258 Z"/>
+      <path fill="#1fb6ff" opacity=".9" d="M182 292 C220 314 258 317 296 300 C258 342 210 342 182 292 Z"/>
+      <circle cx="186" cy="220" r="22" fill="white" opacity=".95"/>
+      <circle cx="190" cy="218" r="12" fill="#04111f"/>
+      <circle cx="195" cy="213" r="5" fill="white"/>
+    </svg>
+    <span class="logo-text">KIT-H</span>
+  </div>
+  <div class="header-right">
+    <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+    <button class="gear-btn" onclick="openSettings()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="content">
+  <div class="account-card">
+    <div class="account-card-header" onclick="toggleAccount()">
+      <div class="acct-left">
+        <span class="acct-name" id="acctName">Аккаунт 1</span>
+        <span class="acct-addr" id="acctShort">0x8F9e...7a3c</span>
+      </div>
+      <span class="acct-arrow" id="acctArrow">›</span>
+    </div>
+    <div class="account-dropdown" id="acctDropdown">
+      <div class="account-dropdown-inner">
+        <div class="addr-box">
+          <span class="addr-full" id="acctFullAddr">0x8F9e3b2c1d4a5f6e7890abcdef1234567890a7a3c</span>
+          <button class="copy-btn" id="copyBtn" onclick="copyAddress(event)">Copy</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NETWORK BADGE -->
+  <div class="net-badge" id="netBadge" onclick="openNetworkSwitcher()">
+    <span class="net-dot"></span>
+    <span class="net-badge-icon">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+    </span>
+    <span id="netBadgeLabel">Ethereum Mainnet</span>
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style="margin-left:2px"><polyline points="2,3.5 5,6.5 8,3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div>
+
+  <div class="balance-wrap">
+    <div class="balance-label">
+      <span id="lblTotalBalance">Общий баланс</span>
+      <button class="eye-btn" onclick="toggleBalanceVisibility()">
+        <svg id="eyeOpen" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        <svg id="eyeClosed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+      </button>
+    </div>
+    <div class="balance-primary-row">
+      <span class="balance-primary" id="primaryBalance" onclick="toggleBalanceDisplay()">$4,567.80</span>
+      <!-- ПЕРЕКЛЮЧАТЕЛЬ ВАЛЮТ -->
+      <div class="currency-switcher" id="currencySwitcher">
+        <button class="curr-btn active" data-curr="USD">USD</button>
+        <button class="curr-btn" data-curr="EUR">EUR</button>
+        <button class="curr-btn" data-curr="ETH">ETH</button>
+        <button class="curr-btn" data-curr="RUB">RUB</button>
+      </div>
+      <span id="changeBadge" class="change-badge" style="display:none"></span>
+    </div>
+  </div>
+
+  <div class="gas-badge-wrap">
+    <div class="gas-badge" onclick="toggleGasBadge()">
+      <span class="gas-icon-svg" id="gasIconEl"></span>
+      <span id="gasAmount">0 USDC</span>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="act-btn" onclick="showToast(T('send'))">
+      <div class="act-circle"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></div>
+      <span class="act-label" id="lblSend">Отправить</span>
+    </button>
+    <button class="act-btn" onclick="showToast(T('receive'))">
+      <div class="act-circle"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></div>
+      <span class="act-label" id="lblReceive">Получить</span>
+    </button>
+    <button class="act-btn" onclick="showToast(T('buy'))">
+      <div class="act-circle"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
+      <span class="act-label" id="lblBuy">Купить</span>
+    </button>
+    <button class="act-btn" onclick="openSwapModal()">
+      <div class="act-circle"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></div>
+      <span class="act-label" id="lblSwap">Обмен</span>
+    </button>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" id="tab-assets" onclick="switchTab('assets')">АКТИВЫ</div>
+    <div class="tab" id="tab-activity" onclick="switchTab('activity')">ИСТОРИЯ</div>
+  </div>
+
+  <div id="panel-assets">
+    <div class="assets-section">
+      <div class="section-title" id="lblTokens">Токены</div>
+      <div id="assetList"></div>
+    </div>
+  </div>
+
+  <div class="activity-list" id="panel-activity">
+    <div class="act-row">
+      <div class="act-icon-wrap act-icon-recv"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></div>
+      <div class="act-mid"><div class="act-type">Получено ETH</div><div class="act-time">12:30</div><div class="act-hash">hash/06ecf3799fe957b...</div></div>
+      <div class="act-amount-pos">+1.5 ETH</div>
+    </div>
+    <div class="act-row">
+      <div class="act-icon-wrap act-icon-send"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></div>
+      <div class="act-mid"><div class="act-type">Отправлено ETH</div><div class="act-time">12:30</div><div class="act-hash">hash/06ecf3799fb6e04b...</div></div>
+      <div class="act-amount-neg">-0.5 ETH</div>
+    </div>
+  </div>
+
+  <!-- MARKET PANEL -->
+  <div class="market-panel" id="panel-market">
+    <div class="market-header">
+      <div class="section-title" style="padding:0" id="lblMarket">Рынок</div>
+      <button class="market-refresh" onclick="refreshMarket()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        <span id="lblRefresh">Обновить</span>
+      </button>
+    </div>
+    <div id="marketList"></div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="settings-page" id="settingsPage">
+    <div class="s-item" onclick="openAdmin()">
+      <div class="s-left">
+        <div class="s-icon" style="background:#e8f4fd">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#037dd6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><polyline points="8 21 12 17 16 21"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        </div>
+        <div><div class="s-name" id="sAdminName">Админ панель</div><div class="s-sub" id="sAdminSub">Изменить балансы, имя, проценты</div></div>
+      </div>
+      <span class="s-arrow">›</span>
+    </div>
+    <div class="s-item" onclick="toggleLang()">
+      <div class="s-left">
+        <div class="s-icon" style="background:#e8f0fd">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#3b5bdb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        </div>
+        <div><div class="s-name" id="sLangName">Язык / Language</div><div class="s-sub" id="sLangSub">Сейчас: Русский</div></div>
+      </div>
+      <span class="s-arrow">›</span>
+    </div>
+    <div class="s-item" onclick="toggleTheme();showToast(T('themeChanged'))">
+      <div class="s-left">
+        <div class="s-icon" style="background:#fff8e1">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#856404" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </div>
+        <div><div class="s-name" id="sDarkName">Тёмная тема</div><div class="s-sub" id="sDarkSub">Переключить оформление</div></div>
+      </div>
+      <span class="s-arrow">›</span>
+    </div>
+    <div class="s-item" onclick="openNetworkSwitcher()">
+      <div class="s-left">
+        <div class="s-icon" style="background:#e8fdf0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#28a745" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        </div>
+        <div><div class="s-name" id="sNetName">Смена сети</div><div class="s-sub" id="sNetSub">Сейчас: Ethereum Mainnet</div></div>
+      </div>
+      <span class="s-arrow">›</span>
+    </div>
+  </div>
+</div>
+
+<nav class="bottom-nav">
+  <button class="nav-btn active" id="nav-wallet" onclick="setNav('wallet')">
+    <span class="nav-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><circle cx="17" cy="14" r="1.5" fill="currentColor"/></svg></span>
+    <span class="nav-label" id="nav-label-wallet">Кошелёк</span>
+  </button>
+  <button class="nav-btn" id="nav-market" onclick="setNav('market')">
+    <span class="nav-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="14" width="4" height="7" rx="1"/><rect x="9" y="8" width="4" height="13" rx="1"/><rect x="16" y="11" width="4" height="10" rx="1"/><line x1="0" y1="21" x2="24" y2="21" stroke-width="1.5"/><polyline points="4 7 9 4 14 6 20 3" stroke-width="2"/><circle cx="4" cy="7" r="1.5" fill="currentColor"/><circle cx="9" cy="4" r="1.5" fill="currentColor"/><circle cx="14" cy="6" r="1.5" fill="currentColor"/><circle cx="20" cy="3" r="1.5" fill="currentColor"/></svg></span>
+    <span class="nav-label" id="nav-label-market">Рынок</span>
+  </button>
+  <button class="nav-btn" id="nav-send" onclick="setNav('send')">
+    <span class="nav-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></span>
+    <span class="nav-label" id="nav-label-send">Отправить</span>
+  </button>
+  <button class="nav-btn" id="nav-swap" onclick="setNav('swap');openSwapModal()">
+    <span class="nav-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></span>
+    <span class="nav-label" id="nav-label-swap">Обмен</span>
+  </button>
+  <button class="nav-btn" id="nav-settings" onclick="setNav('settings')">
+    <span class="nav-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
+    <span class="nav-label" id="nav-label-settings">Настройки</span>
+  </button>
+</nav>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- NETWORK SWITCHER MODAL -->
+<div class="modal-overlay" id="networkModal">
+  <div class="modal-sheet">
+    <div class="modal-title">
+      <span class="modal-title-left">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        <span id="lblNetworkSwitcher">Смена сети</span>
+      </span>
+      <button class="modal-close" onclick="closeNetworkSwitcher()">✕</button>
+    </div>
+    <div id="networkOptions"></div>
+  </div>
+</div>
+
+<!-- SWAP MODAL (улучшенный) -->
+<div class="modal-overlay" id="swapModal">
+  <div class="modal-sheet">
+    <div class="modal-title">
+      <span class="modal-title-left">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+        Обмен токенов
+      </span>
+      <button class="modal-close" onclick="closeSwapModal()">✕</button>
+    </div>
+    <div class="modal-sheet-scroll swap-content">
+      <!-- FROM -->
+      <div class="swap-box">
+        <div class="swap-box-label">Отдаёте</div>
+        <div class="swap-token-row">
+          <button class="swap-token-btn" onclick="openTokenSelect('from')">
+            <div id="swapFromIcon" style="width:24px;height:24px;flex-shrink:0"></div>
+            <span class="swap-token-sym" id="swapFromSym">ETH</span>
+            <span class="swap-token-arrow">▼</span>
+          </button>
+          <div class="swap-amount-wrap">
+            <input class="swap-amount-input" id="swapAmtFrom" type="number" placeholder="0.0" oninput="calcSwap()" step="any">
+            <div class="swap-usd-equiv" id="swapFromUsd">≈ $0.00</div>
+          </div>
+        </div>
+        <div class="swap-balance-row">
+          <span class="swap-balance-label" id="swapFromBal">Баланс: 0</span>
+          <button class="swap-max-btn" onclick="swapSetMax()">MAX</button>
+        </div>
+      </div>
+
+      <!-- Swap arrow -->
+      <div class="swap-divider">
+        <div class="swap-arrow-circle" onclick="swapFlip()">⇅</div>
+      </div>
+
+      <!-- TO -->
+      <div class="swap-box">
+        <div class="swap-box-label">Получаете</div>
+        <div class="swap-token-row">
+          <button class="swap-token-btn" onclick="openTokenSelect('to')">
+            <div id="swapToIcon" style="width:24px;height:24px;flex-shrink:0"></div>
+            <span class="swap-token-sym" id="swapToSym">USDT</span>
+            <span class="swap-token-arrow">▼</span>
+          </button>
+          <div class="swap-amount-wrap">
+            <input class="swap-amount-input" id="swapAmtTo" type="number" placeholder="0.0" readonly>
+            <div class="swap-usd-equiv" id="swapToUsd">≈ $0.00</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slippage -->
+      <div style="margin:10px 0 6px">
+        <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Проскальзывание</div>
+        <div class="slippage-row">
+          <button class="slip-btn active" onclick="setSlip(this,'0.1')">0.1%</button>
+          <button class="slip-btn" onclick="setSlip(this,'0.5')">0.5%</button>
+          <button class="slip-btn" onclick="setSlip(this,'1.0')">1.0%</button>
+          <button class="slip-btn" onclick="setSlip(this,'3.0')">3.0%</button>
+        </div>
+      </div>
+
+      <!-- Swap info -->
+      <div class="swap-info" id="swapInfo">
+        <div class="swap-info-row"><span class="swap-info-label">Курс</span><span class="swap-info-val" id="swapRate">—</span></div>
+        <div class="swap-info-row"><span class="swap-info-label">Комиссия сети</span><span class="swap-info-val green" id="swapFee">~$0.00</span></div>
+        <div class="swap-info-row"><span class="swap-info-label">Минимум</span><span class="swap-info-val" id="swapMin">—</span></div>
+      </div>
+
+      <button class="swap-btn" onclick="doSwap()">Обменять</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOKEN SELECT MODAL -->
+<div class="modal-overlay" id="tokenSelectModal">
+  <div class="modal-sheet">
+    <div class="modal-title">
+      <span class="modal-title-left">Выбор токена</span>
+      <button class="modal-close" onclick="closeTokenSelect()">✕</button>
+    </div>
+    <div class="modal-sheet-scroll token-select-list" id="tokenSelectList"></div>
+  </div>
+</div>
+
+<!-- ADMIN MODAL -->
+<div class="modal-overlay" id="adminModal">
+  <div class="modal-sheet">
+    <div class="modal-title">
+      <span class="modal-title-left">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><polyline points="8 21 12 17 16 21"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        Админ панель
+      </span>
+      <button class="modal-close" onclick="closeAdmin()">✕</button>
+    </div>
+
+    <div class="a-section">
+      <div class="a-title">Аккаунт</div>
+      <div class="a-row">
+        <label class="a-label">Название аккаунта</label>
+        <input class="a-input" id="inp-acctName" type="text" placeholder="Аккаунт 1" maxlength="24">
+      </div>
+      <div class="a-grid2">
+        <div class="a-row">
+          <label class="a-label">Короткий адрес</label>
+          <input class="a-input" id="inp-addrShort" type="text" placeholder="0x8F9e...7a3c">
+        </div>
+        <div class="a-row">
+          <label class="a-label">Полный адрес</label>
+          <input class="a-input" id="inp-address" type="text" placeholder="0x...">
+        </div>
+      </div>
+    </div>
+
+    <div class="a-section">
+      <div class="a-title">Общий баланс</div>
+      <div class="a-grid2">
+        <div class="a-row">
+          <label class="a-label">Сумма USD</label>
+          <input class="a-input" id="inp-totalUSD" type="number" step="any" placeholder="4567.80">
+        </div>
+        <div class="a-row">
+          <label class="a-label">Сумма ETH</label>
+          <input class="a-input" id="inp-totalETH" type="number" step="any" placeholder="1.5">
+        </div>
+      </div>
+    </div>
+
+    <div class="a-section">
+      <div class="a-title">Изменение % <span class="auto-badge">AUTO</span></div>
+      <div class="a-info">Процент считается автоматически по 24ч изменению цен CoinGecko. Здесь можно задать вручную.</div>
+      <div class="a-grid2">
+        <div class="a-row">
+          <label class="a-label">Процент (вручную)</label>
+          <input class="a-input" id="inp-changeVal" type="number" step="0.01" placeholder="0.00">
+        </div>
+        <div class="a-row">
+          <label class="a-label">Тип</label>
+          <select class="a-input" id="inp-changeDir">
+            <option value="auto">Авто (по курсу)</option>
+            <option value="none">Скрыть</option>
+            <option value="pos">Рост (зелёный)</option>
+            <option value="neg">Падение (красный)</option>
+            <option value="neu">Нейтрально (серый)</option>
+          </select>
+        </div>
+      </div>
+      <div class="change-preview-box">
+        <span style="font-size:12px;color:var(--muted);font-weight:600">Предпросмотр:</span>
+        <span id="changePrev" class="change-badge" style="display:none"></span>
+      </div>
+    </div>
+
+    <div class="a-section">
+      <div class="a-title">Иконка газа</div>
+      <div class="gas-icon-picker" id="gasIconPicker"></div>
+    </div>
+
+    <div class="a-section">
+      <div class="a-title">Gas USDC</div>
+      <div class="a-row">
+        <label class="a-label">Количество USDC</label>
+        <input class="a-input" id="inp-gasUSDC" type="number" step="any" placeholder="0">
+      </div>
+    </div>
+
+    <div class="a-section">
+      <div class="a-title">Количество токенов</div>
+      <div class="a-info">Введи количество монет -- USD считается по реальному курсу</div>
+      <div id="adminTokenFields"></div>
+      <button class="a-quick" onclick="recalcFromLive()">Пересчитать по реальному курсу</button>
+    </div>
+
+    <div class="a-section">
+      <div class="a-title">Быстрые действия</div>
+      <div class="a-info" id="remainInfo"><span>Остаток (Итого − ETH):</span><strong id="remainVal">--</strong></div>
+      <button class="a-quick" onclick="distributeToUSDT()">Перенести остаток на USDT</button>
+    </div>
+
+    <div class="a-section">
+      <div class="a-title">ETH на Ethereum сети</div>
+      <div class="a-row">
+        <label class="a-label">Количество ETH (Ethereum network)</label>
+        <input class="a-input" id="inp-ethMain" type="number" step="any" placeholder="1.5">
+      </div>
+    </div>
+
+    <button class="a-apply" onclick="applyAdmin()">Применить изменения</button>
+  </div>
+</div>
+
+<script>
+// ─── NETWORKS ──────────────────────────────────────────────────
+const NETWORKS=[
+  {id:'eth-main',label:'Ethereum Mainnet',chain:'ERC-20 · Mainnet',color:'#627eea',
+   icon:`<svg viewBox="0 0 42 42"><circle cx="21" cy="21" r="21" fill="#627eea"/><g fill="white"><polygon points="21,6 21,23 28,19.5" opacity=".6"/><polygon points="21,6 14,19.5 21,23"/><polygon points="21,25.5 21,36 28,22" opacity=".6"/><polygon points="21,25.5 14,22 21,36"/><polygon points="21,23 28,19.5 21,25.5" opacity=".2"/><polygon points="21,23 14,19.5 21,25.5"/></g></svg>`},
+  {id:'arbitrum',label:'Arbitrum One',chain:'L2 · Arbitrum',color:'#12aaff',
+   icon:`<svg viewBox="0 0 42 42"><circle cx="21" cy="21" r="21" fill="#213147"/><text x="21" y="27" text-anchor="middle" fill="#12aaff" font-size="18" font-weight="800" font-family="Arial">A</text></svg>`},
+  {id:'base',label:'Base',chain:'L2 · Coinbase',color:'#0052ff',
+   icon:`<svg viewBox="0 0 42 42"><circle cx="21" cy="21" r="21" fill="#0052ff"/><circle cx="21" cy="21" r="9" fill="none" stroke="white" stroke-width="3"/></svg>`},
+  {id:'polygon',label:'Polygon',chain:'MATIC · Polygon PoS',color:'#8247e5',
+   icon:`<svg viewBox="0 0 42 42"><circle cx="21" cy="21" r="21" fill="#8247e5"/><path d="M26 15l-4-2.3-5.5 3.2v6.5l5.5 3.2 4-2.3v-4.3l-4 2.3-1.5-0.9v-2.1l1.5-0.9 4 2.3z" fill="white"/></svg>`},
+  {id:'bsc',label:'BNB Smart Chain',chain:'BEP-20 · BSC',color:'#f0b90b',
+   icon:`<svg viewBox="0 0 42 42"><circle cx="21" cy="21" r="21" fill="#f0b90b"/><text x="21" y="26" text-anchor="middle" fill="white" font-size="11" font-weight="800" font-family="Arial">BNB</text></svg>`},
+  {id:'tron',label:'Tron',chain:'TRC-20 · Tron',color:'#cc0000',
+   icon:`<svg viewBox="0 0 42 42"><circle cx="21" cy="21" r="21" fill="#cc0000"/><polygon points="21,9 33,28 9,28" fill="white" opacity=".9"/></svg>`},
+  {id:'solana',label:'Solana',chain:'SPL · Solana',color:'#9945ff',
+   icon:`<svg viewBox="0 0 42 42"><defs><linearGradient id="sg2" x1="0" y1="0" x2="42" y2="42"><stop offset="0%" stop-color="#9945ff"/><stop offset="100%" stop-color="#14f195"/></linearGradient></defs><circle cx="21" cy="21" r="21" fill="#000"/><text x="21" y="28" text-anchor="middle" fill="url(#sg2)" font-size="20" font-weight="800" font-family="Arial">◎</text></svg>`},
+];
+
+// ─── GAS ICONS ────────────────────────────────────────────────
+const GAS_ICONS={
+  fuel:{label:'Насос',svg:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="12" height="18" rx="2"/><path d="M14 8h3a2 2 0 0 1 2 2v5a2 2 0 0 0 4 0V8l-3-4"/><line x1="6" y1="10" x2="10" y2="10"/></svg>`},
+  flame:{label:'Огонь',svg:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>`},
+  bolt:{label:'Молния',svg:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`},
+  drop:{label:'Капля',svg:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>`},
+  zap:{label:'Заряд',svg:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/><line x1="8" y1="12" x2="12" y2="12"/></svg>`},
+  cpu:{label:'Чип',svg:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="2" x2="9" y2="4"/><line x1="15" y1="2" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="22"/><line x1="15" y1="20" x2="15" y2="22"/><line x1="20" y1="9" x2="22" y2="9"/><line x1="20" y1="14" x2="22" y2="14"/><line x1="2" y1="9" x2="4" y2="9"/><line x1="2" y1="14" x2="4" y2="14"/></svg>`},
+};
+
+// ─── FALLBACK PRICES (offline / API fail) ─────────────────────
+const FALLBACK_PRICES={
+  ethereum:3500,'tether':1.0,'usd-coin':1.0,bitcoin:105000,
+  tron:0.25,solana:180,binancecoin:650,'matic-network':0.5,
+};
+
+// ─── CURRENCY SYMBOLS & RATES (конвертация от USD) ─────────────
+const CURRENCY_SYMBOLS={USD:'$',EUR:'€',ETH:'Ξ',RUB:'₽'};
+const FALLBACK_FX={EUR:0.92, RUB:90};
+
+// ─── I18N ─────────────────────────────────────────────────────
+const I18N={
+  ru:{totalBalance:'Общий баланс',send:'Отправить',receive:'Получить',buy:'Купить',swap:'Обмен',
+    assets:'АКТИВЫ',history:'ИСТОРИЯ',tokens:'Токены',market:'Рынок',refresh:'Обновить',
+    navWallet:'Кошелёк',navMarket:'Рынок',navSend:'Отправить',navSwap:'Обмен',navSettings:'Настройки',
+    adminPanel:'Админ панель',adminSub:'Изменить балансы, имя, проценты',
+    langLabel:'Язык / Language',langSub:'Сейчас: Русский',
+    darkTheme:'Тёмная тема',darkSub:'Переключить оформление',
+    networkLabel:'Смена сети',networkSwitcher:'Смена сети',
+    copy:'Копировать',themeChanged:'Тема изменена',nowNet:'Сейчас: '},
+  en:{totalBalance:'Total Balance',send:'Send',receive:'Receive',buy:'Buy',swap:'Swap',
+    assets:'ASSETS',history:'HISTORY',tokens:'Tokens',market:'Market',refresh:'Refresh',
+    navWallet:'Wallet',navMarket:'Market',navSend:'Send',navSwap:'Swap',navSettings:'Settings',
+    adminPanel:'Admin Panel',adminSub:'Edit balances, name, percentages',
+    langLabel:'Language / Язык',langSub:'Now: English',
+    darkTheme:'Dark Mode',darkSub:'Toggle appearance',
+    networkLabel:'Network',networkSwitcher:'Network',
+    copy:'Copy',themeChanged:'Theme changed',nowNet:'Now: '},
+};
+
+function T(key){ return (I18N[currentLang]||I18N.ru)[key]||key; }
+
+function applyLang(){
+  const L=I18N[currentLang]||I18N.ru;
+  const s=id=>document.getElementById(id);
+  const trySet=(id,v)=>{ const e=s(id); if(e) e.textContent=v; };
+  trySet('lblTotalBalance',L.totalBalance);
+  trySet('lblSend',L.send); trySet('lblReceive',L.receive);
+  trySet('lblBuy',L.buy); trySet('lblSwap',L.swap);
+  trySet('tab-assets',L.assets); trySet('tab-activity',L.history);
+  trySet('lblTokens',L.tokens);
+  trySet('lblMarket',L.market); trySet('lblRefresh',L.refresh);
+  trySet('nav-label-wallet',L.navWallet); trySet('nav-label-market',L.navMarket);
+  trySet('nav-label-send',L.navSend); trySet('nav-label-swap',L.navSwap);
+  trySet('nav-label-settings',L.navSettings);
+  trySet('sAdminName',L.adminPanel); trySet('sAdminSub',L.adminSub);
+  trySet('sLangName',L.langLabel); trySet('sLangSub',L.langSub);
+  trySet('sDarkName',L.darkTheme); trySet('sDarkSub',L.darkSub);
+  trySet('sNetName',L.networkLabel);
+  trySet('lblNetworkSwitcher',L.networkSwitcher);
+  trySet('copyBtn',L.copy);
+  const net=NETWORKS.find(n=>n.id===currentNetwork)||NETWORKS[0];
+  trySet('sNetSub',L.nowNet+net.label);
+}
+
+// ─── STATE ────────────────────────────────────────────────────
+let toastTimer,isDark=false,balanceFlipped=false,balanceHidden=false,gasHidden=false,acctOpen=false,currentLang='ru',currentNav='wallet',currentNetwork='eth-main',gasIconKey='fuel';
+let currentCurrency='USD'; // <-- валюта главного баланса
+const openNetworks={};
+const MASK='••••';
+
+const DEFAULT_TOTALS={usd:4567.80,eth:1.5,gasUSDC:0,changeVal:0,changeDir:'auto'};
+const DEFAULT_WALLET={full:'0x8F9e3b2c1d4a5f6e7890abcdef1234567890a7a3c',short:'0x8F9e...7a3c',name:'Аккаунт 1'};
+
+const DEFAULT_TOKENS=[
+  {id:'eth',name:'Ethereum',sym:'ETH',cgId:'ethereum',amount:1.5,usd:3750,nets:3,
+   icon:`<svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="22" fill="#627eea"/><g fill="white"><polygon points="22,7 22,24.5 29,21" opacity=".6"/><polygon points="22,7 15,21 22,24.5"/><polygon points="22,26.5 22,37 29,23" opacity=".6"/><polygon points="22,26.5 15,23 22,37"/><polygon points="22,24.5 29,21 22,26.5" opacity=".2"/><polygon points="22,24.5 15,21 22,26.5"/></g></svg>`,
+   networks:[
+     {name:'Ethereum',tag:'Ethereum',amount:1.5,icon:`<svg viewBox="0 0 18 18"><circle cx="9" cy="9" r="9" fill="#627eea"/><g fill="white" transform="translate(4,2) scale(.56)"><polygon points="9,0 9,13.5 15,11" opacity=".6"/><polygon points="9,0 3,11 9,13.5"/></g></svg>`},
+     {name:'Ethereum',tag:'Arbitrum',amount:0,icon:`<svg viewBox="0 0 18 18"><circle cx="9" cy="9" r="9" fill="#213147"/><text x="9" y="13" text-anchor="middle" fill="#12aaff" font-size="8" font-weight="800" font-family="Arial">A</text></svg>`},
+     {name:'Ethereum',tag:'Base',amount:0,icon:`<svg viewBox="0 0 18 18"><circle cx="9" cy="9" r="9" fill="#0052ff"/><circle cx="9" cy="9" r="4" fill="none" stroke="white" stroke-width="1.5"/></svg>`},
+   ]},
+  {id:'usdt',name:'Tether USD',sym:'USDT',cgId:'tether',amount:817.80,usd:817.80,nets:4,
+   icon:`<svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="22" fill="#26a17b"/><text x="22" y="29" text-anchor="middle" fill="white" font-size="20" font-weight="800" font-family="Arial">₮</text></svg>`,
+   networks:[
+     {name:'USDT',tag:'Ethereum',amount:817.80,icon:`<svg viewBox="0 0 18 18"><circle cx="9" cy="9" r="9" fill="#627eea"/></svg>`},
+     {name:'USDT',tag:'Polygon',amount:0,icon:`<svg viewBox="0 0 18 18"><circle cx="9" cy="9" r="9" fill="#8247e5"/></svg>`},
+     {name:'USDT',tag:'Tron',amount:0,icon:`<svg viewBox="0 0 18 18"><circle cx="9" cy="9" r="9" fill="#cc0000"/></svg>`},
+     {name:'USDT',tag:'BNB Smart Chain',amount:0,icon:`<svg viewBox="0 0 18 18"><circle cx="9" cy="9" r="9" fill="#f0b90b"/></svg>`},
+   ]},
+  {id:'usdc',name:'USD Coin',sym:'USDC',cgId:'usd-coin',amount:0,usd:0,nets:4,
+   icon:`<svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="22" fill="#2775ca"/><circle cx="22" cy="22" r="14" fill="none" stroke="white" stroke-width="2.5" opacity=".8"/><text x="22" y="27" text-anchor="middle" fill="white" font-size="14" font-weight="800" font-family="Arial">$</text></svg>`,
+   networks:[
+     {name:'USDC',tag:'Ethereum',amount:0,icon:`<svg viewBox="0 0 18 18"><circle cx="9" cy="9" r="9" fill="#627eea"/></svg>`},
+     {name:'USDC',tag:'Polygon',amount:0,icon:`<svg viewBox="0 0 18 18"><circle cx="9" cy="9" r="9" fill="#8247e5"/></svg>`},
+     {name:'USDC',tag:'Arbitrum',amount:0,icon:`<svg viewBox="0 0 18 18"><circle cx="9" cy="9" r="9" fill="#213147"/></svg>`},
+     {name:'USDC',tag:'Base',amount:0,icon:`<svg viewBox="0 0 18 18"><circle cx="9" cy="9" r="9" fill="#0052ff"/></svg>`},
+   ]},
+  {id:'btc',name:'Bitcoin',sym:'BTC',cgId:'bitcoin',amount:0,usd:0,nets:0,
+   icon:`<svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="22" fill="#f7931a"/><text x="22" y="29" text-anchor="middle" fill="white" font-size="20" font-weight="800" font-family="Arial">₿</text></svg>`,networks:[]},
+  {id:'trx',name:'Tron',sym:'TRX',cgId:'tron',amount:0,usd:0,nets:0,
+   icon:`<svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="22" fill="#cc0000"/><polygon points="22,10 34,30 10,30" fill="white" opacity=".9"/></svg>`,networks:[]},
+  {id:'sol',name:'Solana',sym:'SOL',cgId:'solana',amount:0,usd:0,nets:0,
+   icon:`<svg viewBox="0 0 44 44"><defs><linearGradient id="sg" x1="0" y1="0" x2="44" y2="44"><stop offset="0%" stop-color="#9945ff"/><stop offset="100%" stop-color="#14f195"/></linearGradient></defs><circle cx="22" cy="22" r="22" fill="#000"/><text x="22" y="29" text-anchor="middle" fill="url(#sg)" font-size="20" font-weight="800" font-family="Arial">◎</text></svg>`,networks:[]},
+  {id:'bnb',name:'Binance Coin',sym:'BNB',cgId:'binancecoin',amount:0,usd:0,nets:0,
+   icon:`<svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="22" fill="#f0b90b"/><text x="22" y="29" text-anchor="middle" fill="white" font-size="14" font-weight="800" font-family="Arial">BNB</text></svg>`,networks:[]},
+  {id:'pol',name:'Polygon',sym:'POL',cgId:'matic-network',amount:0,usd:0,nets:0,
+   icon:`<svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="22" fill="#8247e5"/><path d="M28 16.5l-4-2.3-6 3.5v7l6 3.5 4-2.3v-4.7l-4 2.3-2-1.2v-2.3l2-1.2 4 2.3z" fill="white"/></svg>`,networks:[]},
+];
+
+let TOKENS=JSON.parse(JSON.stringify(DEFAULT_TOKENS));
+let TOTALS={...DEFAULT_TOTALS};
+let WALLET={...DEFAULT_WALLET};
+let liveRates={};
+let autoChangeVal=0,autoChangeDir='none';
+let marketChanges={};
+
+const chevUp=`<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><polyline points="2,6.5 5,3.5 8,6.5" stroke="#666" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const chevDn=`<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><polyline points="2,3.5 5,6.5 8,3.5" stroke="#666" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+// ─── STORAGE ─────────────────────────────────────────────────
+function save(){
+  try{
+    localStorage.setItem('kithw4',JSON.stringify({
+      TOKENS,TOTALS,WALLET,isDark,balanceHidden,balanceFlipped,
+      gasHidden,currentLang,liveRates,currentNetwork,
+      autoChangeVal,autoChangeDir,gasIconKey,marketChanges,
+      currentCurrency
+    }));
+  }catch(e){}
+}
+function load(){
+  try{
+    const r=localStorage.getItem('kithw4');
+    if(!r) return;
+    const s=JSON.parse(r);
+    if(s.TOKENS) TOKENS=s.TOKENS;
+    if(s.TOTALS) TOTALS={...DEFAULT_TOTALS,...s.TOTALS};
+    if(s.WALLET) WALLET={...DEFAULT_WALLET,...s.WALLET};
+    if(typeof s.isDark==='boolean') isDark=s.isDark;
+    if(typeof s.balanceHidden==='boolean') balanceHidden=s.balanceHidden;
+    if(typeof s.balanceFlipped==='boolean') balanceFlipped=s.balanceFlipped;
+    if(typeof s.gasHidden==='boolean') gasHidden=s.gasHidden;
+    if(s.currentLang) currentLang=s.currentLang;
+    if(s.liveRates) liveRates=s.liveRates;
+    if(s.currentNetwork) currentNetwork=s.currentNetwork;
+    if(typeof s.autoChangeVal==='number') autoChangeVal=s.autoChangeVal;
+    if(s.autoChangeDir) autoChangeDir=s.autoChangeDir;
+    if(s.gasIconKey) gasIconKey=s.gasIconKey;
+    if(s.marketChanges) marketChanges=s.marketChanges;
+    if(s.currentCurrency) currentCurrency=s.currentCurrency;
+  }catch(e){}
+}
+
+// ─── LIVE PRICES ──────────────────────────────────────────────
+async function fetchLivePrices(){
+  const active=TOKENS.filter(t=>t.cgId);
+  if(!active.length) return;
+  const ids=active.map(t=>t.cgId).join(',');
+  try{
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),8000);
+    const res=await fetch(
+      `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`,
+      {signal:controller.signal}
+    );
+    clearTimeout(timer);
+    if(!res.ok) throw new Error('API error');
+    const data=await res.json();
+    let totalCurrent=0,totalPrev=0;
+    active.forEach(tok=>{
+      if(data[tok.cgId]){
+        const price=data[tok.cgId].usd;
+        const ch24=data[tok.cgId].usd_24h_change||0;
+        liveRates[tok.cgId]=price;
+        marketChanges[tok.cgId]=ch24;
+        if(tok.amount>0){
+          tok.usd=Math.round(tok.amount*price*100)/100;
+          const prevPrice=price/(1+ch24/100);
+          totalCurrent+=tok.usd;
+          totalPrev+=tok.amount*prevPrice;
+        }
+      }
+    });
+    if(totalPrev>0){
+      const pct=((totalCurrent-totalPrev)/totalPrev)*100;
+      autoChangeVal=Math.round(pct*100)/100;
+      autoChangeDir=pct>0.005?'pos':pct<-0.005?'neg':'neu';
+    }
+    TOTALS.usd=Math.round(TOKENS.reduce((s,t)=>s+t.usd,0)*100)/100;
+    const ethTok=TOKENS.find(t=>t.id==='eth');
+    if(ethTok) TOTALS.eth=ethTok.amount;
+    save(); renderAll();
+  }catch(e){
+    let changed=false;
+    TOKENS.forEach(tok=>{
+      if(tok.amount>0&&tok.usd===0&&FALLBACK_PRICES[tok.cgId]){
+        tok.usd=Math.round(tok.amount*FALLBACK_PRICES[tok.cgId]*100)/100;
+        liveRates[tok.cgId]=FALLBACK_PRICES[tok.cgId];
+        changed=true;
+      }
+    });
+    if(changed){
+      TOTALS.usd=Math.round(TOKENS.reduce((s,t)=>s+t.usd,0)*100)/100;
+    }
+    renderAll();
+  }
+}
+
+// ─── CONVERT CURRENCY ─────────────────────────────────────────
+function getCurrencyRate(target){
+  if(target==='USD') return 1;
+  if(target==='EUR') return FALLBACK_FX.EUR;
+  if(target==='RUB') return FALLBACK_FX.RUB;
+  if(target==='ETH'){
+    const ethPrice=liveRates['ethereum']||FALLBACK_PRICES['ethereum']||3500;
+    return 1/ethPrice;
+  }
+  return 1;
+}
+function convertCurrency(usdAmount, target){
+  if(usdAmount===0||target==='USD') return usdAmount;
+  const rate=getCurrencyRate(target);
+  return usdAmount*rate;
+}
+function fmtCurrency(amount, currency){
+  if(balanceHidden) return MASK;
+  const sym=CURRENCY_SYMBOLS[currency]||'';
+  if(currency==='ETH'){
+    return `${amount.toFixed(6)} ${sym}`;
+  }
+  if(currency==='RUB'){
+    return `${amount.toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2})} ${sym}`;
+  }
+  return `${sym}${amount.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+}
+function getAbsoluteChangeUSD(){
+  const {val,dir}=getEffectiveChange();
+  if(!dir||dir==='none') return 0;
+  const absUSD=(TOTALS.usd*val)/100;
+  return dir==='neg'?-Math.abs(absUSD):Math.abs(absUSD);
+}
+function fmtAbsoluteChange(usdChange, currency){
+  const converted=convertCurrency(Math.abs(usdChange), currency);
+  const sym=CURRENCY_SYMBOLS[currency]||'';
+  if(currency==='ETH'){
+    return `${usdChange>=0?'+':'-'}${converted.toFixed(6)} ${sym}`;
+  }
+  if(currency==='RUB'){
+    return `${usdChange>=0?'+':'-'}${converted.toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2})} ${sym}`;
+  }
+  return `${usdChange>=0?'+':'-'}${sym}${converted.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+}
+
+// ─── FORMAT ──────────────────────────────────────────────────
+function fmtUSD(n){ return n===0?'$0.00':`$${n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`; }
+function fmtAmt(n,sym){ return n===0?`0 ${sym}`:`${n} ${sym}`; }
+function randHash(){return '0x'+[...Array(40)].map(()=>'0123456789abcdef'[Math.floor(Math.random()*16)]).join('');}
+
+// ─── CHANGE BADGE ─────────────────────────────────────────────
+function getEffectiveChange(){
+  const dir=TOTALS.changeDir||'auto';
+  if(dir==='auto') return {val:autoChangeVal,dir:autoChangeDir};
+  return {val:TOTALS.changeVal||0,dir};
+}
+function renderChangeBadge(){
+  const badge=document.getElementById('changeBadge');
+  if(!badge) return;
+  const {val,dir}=getEffectiveChange();
+  if(!dir||dir==='none'){badge.style.display='none';return;}
+  badge.style.display='inline-flex';
+  badge.className='change-badge '+dir;
+  let arrow='',sign='';
+  if(dir==='pos'){arrow='▲';sign='+';}
+  else if(dir==='neg'){arrow='▼';sign='-';}
+  else{arrow='●';sign='';}
+  const absUSD=getAbsoluteChangeUSD();
+  const absStr=fmtAbsoluteChange(absUSD, currentCurrency);
+  badge.innerHTML=`${arrow} ${absStr} (${dir==='neu'?'':sign}${Math.abs(val).toFixed(2)}%)`;
+}
+
+// ─── GAS ICON ─────────────────────────────────────────────────
+function renderGasIcon(){
+  const el=document.getElementById('gasIconEl');
+  if(!el) return;
+  const ico=GAS_ICONS[gasIconKey]||GAS_ICONS.fuel;
+  el.innerHTML=ico.svg;
+}
+
+// ─── RENDER ASSETS ────────────────────────────────────────────
+function renderAssets(){
+  const list=document.getElementById('assetList');
+  if(!list) return;
+  const sorted=[...TOKENS].sort((a,b)=>b.usd-a.usd);
+  list.innerHTML='';
+  sorted.forEach(tok=>{
+    const hasNets=tok.networks&&tok.networks.length>0;
+    const isOpen=openNetworks[tok.id];
+    const unitPrice=liveRates[tok.cgId]||FALLBACK_PRICES[tok.cgId];
+    const unitPriceStr=unitPrice?` · ${fmtUSD(unitPrice)}/${tok.sym}`:'';
+    const usdDisp=balanceHidden?MASK:fmtUSD(tok.usd);
+    const nativeDisp=balanceHidden?MASK:fmtAmt(tok.amount,tok.sym);
+    const row=document.createElement('div');
+    row.className='asset-row'+(isOpen?' expanded':'');
+    row.id='row-'+tok.id;
+    row.onclick=hasNets?()=>toggleNetworks(tok.id):()=>showToast(tok.name);
+    const badgeHTML=hasNets?`<div class="network-count-badge" id="badge-${tok.id}">${isOpen?chevUp:tok.nets}</div>`:'';
+    row.innerHTML=`
+      <div class="coin-wrap">${tok.icon}${badgeHTML}</div>
+      <div class="asset-mid">
+        <div class="asset-name">${tok.name}</div>
+        <div class="asset-sub">${nativeDisp}${unitPriceStr}</div>
+      </div>
+      <div class="asset-right">
+        <div class="asset-usd">${usdDisp}</div>
+      </div>`;
+    list.appendChild(row);
+    if(hasNets&&tok.networks.length){
+      const netList=document.createElement('div');
+      netList.className='network-list'+(isOpen?' open':'');
+      netList.id='net-'+tok.id;
+      tok.networks.forEach(net=>{
+        const na=balanceHidden?MASK:fmtAmt(net.amount,tok.sym);
+        netList.innerHTML+=`
+          <div class="network-row" onclick="showToast('${tok.sym} on ${net.tag}')">
+            <div class="net-coin-wrap">
+              <svg class="net-coin-icon" viewBox="0 0 40 40">${tok.icon.replace('44 44','40 40').replace(/cx="22"/g,'cx="20"').replace(/cy="22"/g,'cy="20"')}</svg>
+              <div class="net-overlay-icon">${net.icon}</div>
+            </div>
+            <div class="net-row-mid"><span class="net-row-name">${net.name}</span><span class="net-tag">${net.tag}</span></div>
+            <div class="net-row-right"><div class="net-row-amount">${na}</div></div>
+          </div>`;
+      });
+      list.appendChild(netList);
+    }
+  });
+}
+
+// ─── RENDER MARKET ────────────────────────────────────────────
+function renderMarket(){
+  const list=document.getElementById('marketList');
+  if(!list) return;
+  list.innerHTML='';
+  TOKENS.filter(t=>t.cgId).forEach(tok=>{
+    const price=liveRates[tok.cgId]||FALLBACK_PRICES[tok.cgId]||0;
+    const ch24=marketChanges[tok.cgId];
+    const chgClass=ch24>0?'pos':ch24<0?'neg':'';
+    const chgStr=ch24!=null?`${ch24>0?'+':''}${ch24.toFixed(2)}%`:'--';
+    list.innerHTML+=`
+      <div class="market-row" onclick="showToast(this.querySelector('.market-name').textContent)">
+        <div class="coin-wrap" style="margin-right:14px">${tok.icon}</div>
+        <div class="market-mid">
+          <div class="market-name">${tok.name}</div>
+          <div class="market-sym">${tok.sym}</div>
+        </div>
+        <div class="market-right">
+          <div class="market-price">${price?fmtUSD(price):'--'}</div>
+          <div class="market-chg ${chgClass}">${chgStr}</div>
+        </div>
+      </div>`;
+  });
+}
+
+async function refreshMarket(){
+  showToast(T('refresh')+'...');
+  await fetchLivePrices();
+  renderMarket();
+}
+
+// ─── RENDER BALANCE / GAS / WALLET ───────────────────────────
+function renderBalance(){
+  const pri=document.getElementById('primaryBalance');
+  if(!pri) return;
+  if(balanceHidden){ pri.textContent=MASK; }
+  else if(balanceFlipped){ pri.textContent=TOTALS.eth+' ETH'; }
+  else {
+    const converted=convertCurrency(TOTALS.usd, currentCurrency);
+    pri.textContent=fmtCurrency(converted, currentCurrency);
+  }
+  renderChangeBadge();
+  // highlight active currency button
+  document.querySelectorAll('.curr-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.curr===currentCurrency);
+  });
+}
+function renderGas(){
+  const el=document.getElementById('gasAmount');
+  if(el) el.textContent=gasHidden?MASK+' USDC':(TOTALS.gasUSDC+' USDC');
+  renderGasIcon();
+}
+function renderWallet(){
+  const s=id=>document.getElementById(id);
+  const trySet=(id,v)=>{ const e=s(id); if(e) e.textContent=v; };
+  trySet('acctName',WALLET.name||'Аккаунт 1');
+  trySet('acctShort',WALLET.short);
+  trySet('acctFullAddr',WALLET.full);
+}
+function renderNetwork(){
+  const net=NETWORKS.find(n=>n.id===currentNetwork)||NETWORKS[0];
+  const el=document.getElementById('netBadgeLabel');
+  if(el) el.textContent=net.label;
+  const sub=document.getElementById('sNetSub');
+  if(sub) sub.textContent=T('nowNet')+net.label;
+}
+function renderAll(){
+  renderBalance(); renderGas(); renderAssets(); renderWallet(); renderNetwork();
+  if(currentNav==='market') renderMarket();
+}
+function updateEyeIcon(){
+  const eo=document.getElementById('eyeOpen');
+  const ec=document.getElementById('eyeClosed');
+  if(eo) eo.style.display=balanceHidden?'none':'block';
+  if(ec) ec.style.display=balanceHidden?'block':'none';
+}
+function applyTheme(){
+  document.getElementById('app').setAttribute('data-theme',isDark?'dark':'');
+  document.documentElement.style.background=isDark?'#0e1420':'#0d1728';
+  const btn=document.getElementById('themeBtn');
+  if(btn) btn.innerHTML=isDark?
+    `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`:
+    `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+}
+
+// ─── CURRENCY SWITCHER ────────────────────────────────────────
+function setCurrency(currency){
+  currentCurrency=currency;
+  save();
+  renderBalance();
+}
+
+// ─── NETWORK SWITCHER ────────────────────────────────────────
+function openNetworkSwitcher(){
+  const container=document.getElementById('networkOptions');
+  if(!container) return;
+  container.innerHTML='';
+  NETWORKS.forEach(net=>{
+    const isSelected=net.id===currentNetwork;
+    const div=document.createElement('div');
+    div.className='net-option'+(isSelected?' selected':'');
+    div.innerHTML=`
+      <div class="net-option-icon">${net.icon}</div>
+      <div class="net-option-info">
+        <div class="net-option-name">${net.label}</div>
+        <div class="net-option-chain">${net.chain}</div>
+      </div>
+      <div class="net-option-check">✓</div>`;
+    div.onclick=()=>selectNetwork(net.id);
+    container.appendChild(div);
+  });
+  document.getElementById('networkModal').classList.add('open');
+}
+function closeNetworkSwitcher(){ document.getElementById('networkModal').classList.remove('open'); }
+function selectNetwork(id){
+  currentNetwork=id;
+  save(); renderNetwork(); applyLang(); closeNetworkSwitcher();
+  const net=NETWORKS.find(n=>n.id===id)||NETWORKS[0];
+  showToast(net.label);
+}
+
+// ─── INTERACTIONS ─────────────────────────────────────────────
+function toggleAccount(){
+  acctOpen=!acctOpen;
+  document.getElementById('acctDropdown').classList.toggle('open',acctOpen);
+  document.getElementById('acctArrow').classList.toggle('open',acctOpen);
+}
+function copyAddress(e){
+  e.stopPropagation();
+  try{ navigator.clipboard&&navigator.clipboard.writeText(WALLET.full); }catch(e2){}
+  showToast(T('copy')+' OK');
+}
+function toggleBalanceVisibility(){ balanceHidden=!balanceHidden; updateEyeIcon(); renderBalance(); renderAssets(); save(); }
+function toggleGasBadge(){ gasHidden=!gasHidden; renderGas(); save(); }
+function toggleBalanceDisplay(){ balanceFlipped=!balanceFlipped; renderBalance(); save(); }
+function toggleNetworks(id){
+  const list=document.getElementById('net-'+id);
+  const row=document.getElementById('row-'+id);
+  const badge=document.getElementById('badge-'+id);
+  const tok=TOKENS.find(t=>t.id===id);
+  openNetworks[id]=!openNetworks[id];
+  const open=openNetworks[id];
+  list&&list.classList.toggle('open',open);
+  row&&row.classList.toggle('expanded',open);
+  if(badge) badge.innerHTML=open?chevUp:tok.nets;
+}
+function switchTab(tab){
+  document.getElementById('tab-assets').classList.toggle('active',tab==='assets');
+  document.getElementById('tab-activity').classList.toggle('active',tab==='activity');
+  document.getElementById('panel-assets').style.display=tab==='assets'?'block':'none';
+  document.getElementById('panel-activity').style.display=tab==='activity'?'block':'none';
+  document.getElementById('settingsPage').classList.remove('show');
+}
+
+// ─── NAV ──────────────────────────────────────────────────────
+const ALL_NAV_IDS=['wallet','market','send','swap','settings'];
+const WALLET_EL_SELS=['.account-card','.net-badge','.balance-wrap','.gas-badge-wrap','.actions','.tabs','#panel-assets','#panel-activity'];
+
+function setNav(id,silent){
+  ALL_NAV_IDS.forEach(n=>{
+    const btn=document.getElementById('nav-'+n);
+    if(btn) btn.classList.toggle('active',n===id);
+  });
+  currentNav=id;
+  WALLET_EL_SELS.forEach(sel=>{
+    const el=document.querySelector(sel);
+    if(el) el.style.display=id==='wallet'?'':'none';
+  });
+  const mp=document.getElementById('panel-market');
+  if(mp) mp.style.display=id==='market'?'block':'none';
+  const sp=document.getElementById('settingsPage');
+  if(sp) sp.classList.toggle('show',id==='settings');
+  if(id==='market') renderMarket();
+  if(!silent&&id!=='wallet'&&id!=='settings'&&id!=='market'){
+    showToast({send:T('send'),swap:T('swap')}[id]||id);
+  }
+  save();
+}
+function openSettings(){ setNav('settings'); }
+function toggleTheme(){ isDark=!isDark; applyTheme(); save(); }
+function toggleLang(){
+  currentLang=currentLang==='ru'?'en':'ru';
+  applyLang();
+  showToast(currentLang==='en'?'English':'Русский');
+  save();
+}
+
+// ─── DISTRIBUTE REMAINDER ────────────────────────────────────
+function distributeToUSDT(){
+  const ethTok=TOKENS.find(t=>t.id==='eth');
+  const rem=Math.max(0,Math.round((TOTALS.usd-(ethTok?ethTok.usd:0))*100)/100);
+  const usdtTok=TOKENS.find(t=>t.id==='usdt');
+  if(!usdtTok) return;
+  usdtTok.usd=rem; usdtTok.amount=rem;
+  if(usdtTok.networks&&usdtTok.networks[0]) usdtTok.networks[0].amount=rem;
+  save(); renderAll(); updateAdminRemainderInfo();
+  showToast('$'+rem.toFixed(2)+' -> USDT');
+  refreshAdminTokenFields();
+}
+function recalcFromLive(){
+  let changed=false;
+  TOKENS.forEach(tok=>{
+    const rate=liveRates[tok.cgId]||FALLBACK_PRICES[tok.cgId];
+    if(tok.amount>0&&rate){ tok.usd=Math.round(tok.amount*rate*100)/100; changed=true; }
+  });
+  if(changed){
+    TOTALS.usd=Math.round(TOKENS.reduce((s,t)=>s+t.usd,0)*100)/100;
+    save(); renderAll(); refreshAdminTokenFields(); updateAdminRemainderInfo();
+    showToast('OK');
+  } else {
+    fetchLivePrices().then(()=>showToast('OK'));
+  }
+}
+
+// ─── ADMIN ────────────────────────────────────────────────────
+function updateAdminRemainderInfo(){
+  const ethTok=TOKENS.find(t=>t.id==='eth');
+  const rem=Math.max(0,Math.round((TOTALS.usd-(ethTok?ethTok.usd:0))*100)/100);
+  const el=document.getElementById('remainVal');
+  if(el) el.textContent='$'+rem.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function updateChangePrev(){
+  const val=parseFloat(document.getElementById('inp-changeVal').value)||0;
+  const dir=document.getElementById('inp-changeDir').value;
+  const prev=document.getElementById('changePrev');
+  if(!prev) return;
+  if(dir==='none'||dir==='auto'){prev.style.display='none';return;}
+  prev.style.display='inline-flex'; prev.className='change-badge '+dir;
+  let arrow='',sign='';
+  if(dir==='pos'){arrow='▲';sign='+';}else if(dir==='neg'){arrow='▼';sign='-';}else{arrow='●';sign='';}
+  prev.innerHTML=`${arrow} ${dir==='neu'?'':sign}${Math.abs(val).toFixed(2)}%`;
+}
+function renderGasIconPicker(){
+  const picker=document.getElementById('gasIconPicker');
+  if(!picker) return;
+  picker.innerHTML='';
+  Object.entries(GAS_ICONS).forEach(([key,ico])=>{
+    const div=document.createElement('div');
+    div.className='gas-icon-opt'+(gasIconKey===key?' selected':'');
+    div.innerHTML=`${ico.svg}<span>${ico.label}</span>`;
+    div.onclick=()=>{
+      gasIconKey=key;
+      document.querySelectorAll('.gas-icon-opt').forEach(d=>d.classList.remove('selected'));
+      div.classList.add('selected');
+    };
+    picker.appendChild(div);
+  });
+}
+function refreshAdminTokenFields(){
+  const tf=document.getElementById('adminTokenFields');
+  if(!tf) return;
+  tf.innerHTML='';
+  TOKENS.forEach(tok=>{
+    const rate=liveRates[tok.cgId]||FALLBACK_PRICES[tok.cgId];
+    const liveStr=rate?` <span style="color:var(--green);font-size:11px">(${fmtUSD(rate)})</span>`:'';
+    tf.innerHTML+=`
+      <div style="margin-bottom:14px;padding:12px;background:var(--expand-bg);border-radius:12px">
+        <div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:8px;display:flex;align-items:center;gap:6px">
+          ${tok.icon.replace('viewBox="0 0 44 44"','viewBox="0 0 44 44" width="20" height="20" style="border-radius:50%;flex-shrink:0"')}
+          ${tok.name} (${tok.sym})${liveStr}
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div>
+            <div style="font-size:11px;color:var(--muted);font-weight:700;margin-bottom:4px">Кол-во ${tok.sym}</div>
+            <input class="a-input" id="adm-amt-${tok.id}" type="number" step="any" value="${tok.amount}" placeholder="0" oninput="onAmtChange('${tok.id}')">
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--muted);font-weight:700;margin-bottom:4px">USD</div>
+            <input class="a-input" id="adm-usd-${tok.id}" type="number" step="any" value="${tok.usd}" placeholder="0">
+          </div>
+        </div>
+      </div>`;
+  });
+  document.getElementById('inp-changeVal').addEventListener('input',updateChangePrev);
+  document.getElementById('inp-changeDir').addEventListener('change',updateChangePrev);
+}
+function onAmtChange(id){
+  const tok=TOKENS.find(t=>t.id===id);
+  if(!tok) return;
+  const aEl=document.getElementById('adm-amt-'+id);
+  const uEl=document.getElementById('adm-usd-'+id);
+  if(!aEl||!uEl) return;
+  const amt=parseFloat(aEl.value)||0;
+  const rate=liveRates[tok.cgId]||FALLBACK_PRICES[tok.cgId];
+  if(rate&&amt>0) uEl.value=(Math.round(amt*rate*100)/100).toFixed(2);
+}
+function openAdmin(){
+  const s=id=>document.getElementById(id);
+  s('inp-acctName').value=WALLET.name||'Аккаунт 1';
+  s('inp-addrShort').value=WALLET.short;
+  s('inp-address').value=WALLET.full;
+  s('inp-totalUSD').value=TOTALS.usd;
+  s('inp-totalETH').value=TOTALS.eth;
+  s('inp-gasUSDC').value=TOTALS.gasUSDC;
+  s('inp-changeVal').value=TOTALS.changeVal||0;
+  s('inp-changeDir').value=TOTALS.changeDir||'auto';
+  const ethTok=TOKENS.find(t=>t.id==='eth');
+  s('inp-ethMain').value=ethTok?.networks[0]?.amount??0;
+  refreshAdminTokenFields(); updateAdminRemainderInfo(); updateChangePrev();
+  renderGasIconPicker();
+  fetchLivePrices().then(()=>{ refreshAdminTokenFields(); updateAdminRemainderInfo(); });
+  document.getElementById('adminModal').classList.add('open');
+}
+function closeAdmin(){ document.getElementById('adminModal').classList.remove('open'); }
+function applyAdmin(){
+  const g=id=>document.getElementById(id);
+  const acctName=g('inp-acctName').value.trim();
+  if(acctName) WALLET.name=acctName;
+  const af=g('inp-address').value.trim();
+  const as=g('inp-addrShort').value.trim();
+  if(af) WALLET.full=af;
+  if(as) WALLET.short=as;
+  const uv=parseFloat(g('inp-totalUSD').value);
+  const ev=parseFloat(g('inp-totalETH').value);
+  if(!isNaN(uv)) TOTALS.usd=uv;
+  if(!isNaN(ev)) TOTALS.eth=ev;
+  const gv=parseFloat(g('inp-gasUSDC').value);
+  if(!isNaN(gv)) TOTALS.gasUSDC=gv;
+  const cv=parseFloat(g('inp-changeVal').value);
+  if(!isNaN(cv)) TOTALS.changeVal=cv;
+  TOTALS.changeDir=g('inp-changeDir').value;
+  TOKENS.forEach(tok=>{
+    const aEl=g('adm-amt-'+tok.id);
+    const uEl=g('adm-usd-'+tok.id);
+    if(aEl&&!isNaN(parseFloat(aEl.value))) tok.amount=parseFloat(aEl.value);
+    if(uEl&&!isNaN(parseFloat(uEl.value))) tok.usd=parseFloat(uEl.value);
+  });
+  const em=parseFloat(g('inp-ethMain').value);
+  const ethTok=TOKENS.find(t=>t.id==='eth');
+  if(ethTok&&ethTok.networks[0]&&!isNaN(em)) ethTok.networks[0].amount=em;
+  save(); closeAdmin(); renderAll(); applyLang();
+  fetchLivePrices();
+  showToast('OK');
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  if(!t) return;
+  clearTimeout(toastTimer); t.textContent=msg; t.classList.add('show');
+  toastTimer=setTimeout(()=>t.classList.remove('show'),1800);
+}
+
+// Close modals on overlay click
+document.getElementById('networkModal').addEventListener('click',function(e){ if(e.target===this) closeNetworkSwitcher(); });
+document.getElementById('adminModal').addEventListener('click',function(e){ if(e.target===this) closeAdmin(); });
+document.getElementById('swapModal').addEventListener('click',function(e){ if(e.target===this) closeSwapModal(); });
+document.getElementById('tokenSelectModal').addEventListener('click',function(e){ if(e.target===this) closeTokenSelect(); });
+
+// ─── CURRENCY BUTTONS ─────────────────────────────────────────
+document.getElementById('currencySwitcher').addEventListener('click',function(e){
+  const btn=e.target.closest('.curr-btn');
+  if(btn) setCurrency(btn.dataset.curr);
+});
+
+// ─── SWAP VARS (новые) ──────────────────────────────────────────────────────────────
+let swapFromId='eth', swapToId='usdt', swapSlip='0.1';
+let tokenSelectTarget='from';
+
+function openSwapModal(){
+  updateSwapUI();
+  document.getElementById('swapModal').classList.add('open');
+}
+function closeSwapModal(){
+  document.getElementById('swapModal').classList.remove('open');
+  document.getElementById('swapAmtFrom').value='';
+  calcSwap();
+}
+
+function updateSwapUI(){
+  const fromTok=TOKENS.find(t=>t.id===swapFromId)||TOKENS[0];
+  const toTok=TOKENS.find(t=>t.id===swapToId)||TOKENS[1];
+  document.getElementById('swapFromSym').textContent=fromTok.sym;
+  document.getElementById('swapToSym').textContent=toTok.sym;
+  document.getElementById('swapFromIcon').innerHTML=fromTok.icon.replace('viewBox="0 0 44 44"','viewBox="0 0 44 44" width="24" height="24"');
+  document.getElementById('swapToIcon').innerHTML=toTok.icon.replace('viewBox="0 0 44 44"','viewBox="0 0 44 44" width="24" height="24"');
+  const fromBal=balanceHidden?MASK:fmtAmt(fromTok.amount,fromTok.sym);
+  document.getElementById('swapFromBal').textContent='Баланс: '+fromBal;
+  calcSwap();
+}
+function calcSwap(){
+  const amt=parseFloat(document.getElementById('swapAmtFrom').value)||0;
+  const fromTok=TOKENS.find(t=>t.id===swapFromId)||TOKENS[0];
+  const toTok=TOKENS.find(t=>t.id===swapToId)||TOKENS[1];
+  const fromRate=liveRates[fromTok.cgId]||FALLBACK_PRICES[fromTok.cgId]||0;
+  const toRate=liveRates[toTok.cgId]||FALLBACK_PRICES[toTok.cgId]||1;
+  const fromUsd=amt*fromRate;
+  const toAmt=toRate>0?(fromUsd/toRate):0;
+  document.getElementById('swapFromUsd').textContent=`≈ ${fmtUSD(fromUsd)}`;
+  document.getElementById('swapAmtTo').value=toAmt>0?toAmt.toFixed(toAmt<1?6:4):'';
+  document.getElementById('swapToUsd').textContent=`≈ ${fmtUSD(fromUsd)}`;
+  if(fromRate&&toRate&&amt>0){
+    const rateDisplay=`1 ${fromTok.sym} = ${(fromRate/toRate).toFixed(6)} ${toTok.sym}`;
+    document.getElementById('swapRate').textContent=rateDisplay;
+    const feeEst=fromUsd*0.003;
+    document.getElementById('swapFee').textContent=`≈ ${fmtUSD(feeEst)}`;
+    const minOut=toAmt*(1-parseFloat(swapSlip)/100);
+    document.getElementById('swapMin').textContent=`${minOut.toFixed(minOut<1?6:4)} ${toTok.sym}`;
+  } else {
+    document.getElementById('swapRate').textContent='—';
+    document.getElementById('swapFee').textContent='~$0.00';
+    document.getElementById('swapMin').textContent='—';
+  }
+}
+function swapFlip(){
+  [swapFromId,swapToId]=[swapToId,swapFromId];
+  document.getElementById('swapAmtFrom').value='';
+  updateSwapUI();
+}
+function swapSetMax(){
+  const fromTok=TOKENS.find(t=>t.id===swapFromId)||TOKENS[0];
+  document.getElementById('swapAmtFrom').value=fromTok.amount;
+  calcSwap();
+}
+function setSlip(btn,val){
+  swapSlip=val;
+  document.querySelectorAll('.slip-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  calcSwap();
+}
+function openTokenSelect(target){
+  tokenSelectTarget=target;
+  const list=document.getElementById('tokenSelectList');
+  list.innerHTML='';
+  TOKENS.forEach(tok=>{
+    const div=document.createElement('div');
+    div.className='token-select-row';
+    div.innerHTML=`
+      <div style="width:36px;height:36px;flex-shrink:0">${tok.icon.replace('viewBox="0 0 44 44"','viewBox="0 0 44 44" width="36" height="36"')}</div>
+      <div><div class="token-select-name">${tok.name}</div><div class="token-select-bal">${fmtAmt(tok.amount,tok.sym)}</div></div>
+      <div class="token-select-usd">${fmtUSD(tok.usd)}</div>`;
+    div.onclick=()=>{
+      if(target==='from') swapFromId=tok.id;
+      else swapToId=tok.id;
+      closeTokenSelect();
+      updateSwapUI();
+    };
+    list.appendChild(div);
+  });
+  document.getElementById('tokenSelectModal').classList.add('open');
+}
+function closeTokenSelect(){document.getElementById('tokenSelectModal').classList.remove('open');}
+function doSwap(){
+  const amt=parseFloat(document.getElementById('swapAmtFrom').value)||0;
+  if(!amt){showToast('Введите сумму');return;}
+  const fromTok=TOKENS.find(t=>t.id===swapFromId);
+  if(amt>fromTok.amount){showToast('Недостаточно средств');return;}
+  // Выполняем обмен (симуляция)
+  const toAmt=parseFloat(document.getElementById('swapAmtTo').value)||0;
+  fromTok.amount=Math.max(0,fromTok.amount-amt);
+  const toTok=TOKENS.find(t=>t.id===swapToId);
+  if(toTok){
+    toTok.amount+=toAmt;
+    const toRate=liveRates[toTok.cgId]||FALLBACK_PRICES[toTok.cgId]||0;
+    toTok.usd=Math.round(toTok.amount*toRate*100)/100;
+  }
+  const fromRate=liveRates[fromTok.cgId]||FALLBACK_PRICES[fromTok.cgId]||0;
+  fromTok.usd=Math.round(fromTok.amount*fromRate*100)/100;
+  TOTALS.usd=Math.round(TOKENS.reduce((s,t)=>s+t.usd,0)*100)/100;
+  const ethTok=TOKENS.find(t=>t.id==='eth');
+  if(ethTok) TOTALS.eth=ethTok.amount;
+  save(); renderAll(); closeSwapModal(); showToast('Обмен выполнен!');
+}
+
+// ─── INIT ─────────────────────────────────────────────────────
+function init(){
+  load();
+  applyTheme();
+  updateEyeIcon();
+  applyLang();
+  setNav(currentNav, true);
+  renderAll();
+  fetchLivePrices();
+  setInterval(fetchLivePrices, 60000);
+}
+init();
+</script>
+</body>
+</html>
